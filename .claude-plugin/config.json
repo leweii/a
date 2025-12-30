@@ -1,0 +1,15 @@
+{
+  "$schema": "./plugin.json",
+  "description": "Configuration template for prompt-manager plugin. Copy this file and set environment variables.",
+  "environment": {
+    "PROMPT_REPO_OWNER": "your-github-username-or-org",
+    "PROMPT_REPO_NAME": "your-prompts-repo"
+  },
+  "setup_instructions": [
+    "1. Create a GitHub repository to store your prompts",
+    "2. Create a 'prompts/' directory in the repository",
+    "3. Set PROMPT_REPO_OWNER to the repository owner",
+    "4. Set PROMPT_REPO_NAME to the repository name",
+    "5. Authenticate with GitHub: gh auth login"
+  ]
+}

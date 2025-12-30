@@ -1,0 +1,49 @@
+{
+  "name": "prompt-manager",
+  "version": "1.0.0",
+  "description": "Manage shared prompt assets via a centralized GitHub repository",
+  "author": "",
+  "environment": {
+    "PROMPT_REPO_OWNER": {
+      "description": "GitHub repository owner for prompt storage",
+      "required": true
+    },
+    "PROMPT_REPO_NAME": {
+      "description": "GitHub repository name for prompt storage",
+      "required": true
+    },
+    "CLAUDE_PLUGIN_ROOT": {
+      "description": "Plugin root path for portable references",
+      "required": false,
+      "default": "."
+    }
+  },
+  "commands": [
+    {
+      "name": "prompt:save",
+      "description": "Save current context as a prompt to the shared repository",
+      "file": "${CLAUDE_PLUGIN_ROOT}/../.claude/commands/prompt-save.md"
+    },
+    {
+      "name": "prompt:list",
+      "description": "List available prompts from the shared repository",
+      "file": "${CLAUDE_PLUGIN_ROOT}/../.claude/commands/prompt-list.md"
+    },
+    {
+      "name": "prompt:use",
+      "description": "Fetch and inject a prompt from the shared repository",
+      "file": "${CLAUDE_PLUGIN_ROOT}/../.claude/commands/prompt-use.md"
+    }
+  ],
+  "skills": [
+    {
+      "name": "prompt-catalog",
+      "path": "${CLAUDE_PLUGIN_ROOT}/../skills/prompt-catalog"
+    }
+  ],
+  "allowed-tools": {
+    "Bash": {
+      "commands": ["git", "curl", "gh"]
+    }
+  }
+}
