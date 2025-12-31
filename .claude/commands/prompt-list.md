@@ -1,75 +1,115 @@
-# /prompt:list
+# /prompt:list (project)
 
-List all available prompts from the shared GitHub repository.
+List all available prompts from local and shared folders.
+
+## Arguments
+
+- `--local` or `-l` (optional): Show only local prompts
+- `--shared` or `-s` (optional): Show only shared prompts
+
+By default, shows prompts from both folders.
 
 ## Instructions
 
 When the user runs `/prompt:list`, perform the following steps:
 
-### 1. Validate Environment
+### 1. Load Configuration
 
-First, check that required environment variables are set:
-
-```bash
-gh auth status
-```
-
-If not authenticated, instruct the user to run `gh auth login`.
-
-Check that `PROMPT_REPO_OWNER` and `PROMPT_REPO_NAME` are set. If not, display an error:
-> Error: Missing required environment variables. Please set PROMPT_REPO_OWNER and PROMPT_REPO_NAME.
-
-### 2. Fetch Directory Listing
-
-Query the prompts directory:
+Read the repository configuration from `.claude/prompt-config.json`:
 
 ```bash
-gh api repos/${PROMPT_REPO_OWNER}/${PROMPT_REPO_NAME}/contents/prompts --jq '.[] | select(.type == "file") | .name'
+cat .claude/prompt-config.json
 ```
 
-### 3. Fetch and Parse Each Prompt
+Extract the paths configuration:
+- `paths.local`: Local prompts folder (e.g., `.claude/prompts/local`)
+- `paths.shared`: Shared prompts folder (e.g., `.claude/prompts/shared`)
 
-For each `.md` file found, fetch its content and extract the description from YAML frontmatter:
+If the config file doesn't exist, display an error:
+> Error: Missing configuration. Please create `.claude/prompt-config.json` first.
+
+### 2. List Local Prompts
+
+If not filtered to shared-only, list all `.md` files in the local folder:
 
 ```bash
-gh api repos/${PROMPT_REPO_OWNER}/${PROMPT_REPO_NAME}/contents/prompts/<filename> --jq '.content' | base64 -d
+ls -1 <paths.local>/*.md 2>/dev/null
 ```
 
-Parse the YAML frontmatter to extract the `description` and `tags` fields.
+For each file found, read and parse the YAML frontmatter to extract `description` and `tags`.
+
+### 3. List Shared Prompts
+
+If not filtered to local-only, list all `.md` files in the shared folder:
+
+```bash
+ls -1 <paths.shared>/*.md 2>/dev/null
+```
+
+For each file found, read and parse the YAML frontmatter to extract `description` and `tags`.
 
 ### 4. Display Results
 
-Format the output as a table:
+Format the output as a table, grouped by type:
 
 ```
 Available Prompts
-─────────────────────────────────────────────────────────────────────
-Name                 Description                          Tags
-─────────────────────────────────────────────────────────────────────
-code-review          Guidelines for reviewing PRs         [review, quality]
-api-design           REST API design patterns             [api, design]
-error-handling       Consistent error handling            [errors, patterns]
-─────────────────────────────────────────────────────────────────────
+═══════════════════════════════════════════════════════════════════════
 
-Use /prompt:use <name> to load a prompt into your session.
+Local Prompts (private)
+───────────────────────────────────────────────────────────────────────
+Name                 Description                          Tags
+───────────────────────────────────────────────────────────────────────
+code-review          Guidelines for reviewing PRs         [review, quality]
+my-notes             Personal task notes                  [notes]
+
+Shared Prompts (synced via git)
+───────────────────────────────────────────────────────────────────────
+Name                 Description                          Tags
+───────────────────────────────────────────────────────────────────────
+api-design           REST API design patterns             [api, design]
+═══════════════════════════════════════════════════════════════════════
+
+Commands:
+  /prompt:use <name>              Load a prompt
+  /prompt:save <name> <desc>      Create a new local prompt
+  /prompt:share <name>            Share a local prompt
 ```
 
-### 5. Handle Empty Repository
+### 5. Handle Empty Folders
 
-If no prompts are found, display:
-> No prompts found in the repository.
+If a folder is empty or doesn't exist, show:
+
+**For local:**
+> No local prompts found.
+
+**For shared:**
+> No shared prompts found.
+
+If both are empty:
+> No prompts found.
 >
-> Use /prompt:save <name> to create your first prompt.
+> Use `/prompt:save <name> <description>` to create your first prompt.
 
 ## Error Handling
 
-- **Authentication error**: Instruct user to run `gh auth login`
-- **Missing env vars**: List which variables need to be set
+- **Missing config**: Instruct user to create `.claude/prompt-config.json`
 - **Directory not found**: Display message that prompts directory doesn't exist yet
-- **API error**: Display the error message from GitHub
+- **Read error**: Display the error message
 
-## Example
+## Examples
 
-User: `/prompt:list`
+List all prompts:
+```
+/prompt:list
+```
 
-Result: Displays a formatted list of all available prompts with their descriptions.
+List only local prompts:
+```
+/prompt:list --local
+```
+
+List only shared prompts:
+```
+/prompt:list --shared
+```

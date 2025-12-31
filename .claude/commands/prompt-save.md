@@ -1,43 +1,50 @@
-# /prompt:save <name>
+# /prompt:save <name> <description> (project)
 
-Save the current task context as a reusable prompt to the shared GitHub repository.
+Generate and save a prompt based on the provided description.
 
 ## Arguments
 
 - `name` (required): The name for the prompt file (without .md extension)
+- `description` (required): A description of what the prompt should do. Claude will generate the full prompt content based on this description.
+
+Prompts are saved to the **local** folder by default (private, not shared).
+Use `/prompt:share <name>` to share a prompt with your team.
 
 ## Instructions
 
-When the user runs `/prompt:save <name>`, perform the following steps:
+When the user runs `/prompt:save <name> <description>`, perform the following steps:
 
-### 1. Validate Environment
+### 1. Parse Arguments
 
-First, check that required environment variables are set:
+Extract:
+- `name`: The first argument (prompt file name)
+- `description`: Everything after the name (the prompt description)
+
+If description is missing, ask the user:
+> Please provide a description for the prompt. Example:
+> `/prompt:save code-review Guidelines for reviewing PRs with focus on security and performance`
+
+### 2. Load Configuration
+
+Read the repository configuration from `.claude/prompt-config.json`:
 
 ```bash
-gh auth status
+cat .claude/prompt-config.json
 ```
 
-If not authenticated, instruct the user to run `gh auth login`.
+Extract the paths configuration:
+- `paths.local`: Local prompts folder (e.g., `.claude/prompts/local`)
 
-Check that `PROMPT_REPO_OWNER` and `PROMPT_REPO_NAME` are set. If not, display an error:
-> Error: Missing required environment variables. Please set PROMPT_REPO_OWNER and PROMPT_REPO_NAME.
+If the config file doesn't exist, display an error:
+> Error: Missing configuration. Please create `.claude/prompt-config.json` first.
 
-### 2. Summarize Context
+### 3. Generate Prompt Content
 
-Analyze the current conversation and extract:
-- The core task or goal
-- Background context and constraints
-- Step-by-step instructions
-- Expected outcomes
-
-### 3. Generate Task Description Prompt
-
-Create a prompt file with this structure:
+Based on the user's description, generate a comprehensive prompt with this structure:
 
 ```markdown
 ---
-description: <Brief one-line description of what this prompt does>
+description: <Brief one-line description based on user input>
 tags: [<relevant>, <tags>]
 created: <YYYY-MM-DD>
 ---
@@ -45,63 +52,55 @@ created: <YYYY-MM-DD>
 # Task: <Descriptive Task Name>
 
 ## Context
-<Background information, why this task exists, relevant constraints>
+<Background information inferred from the description>
 
 ## Instructions
-<Step-by-step instructions or guidelines for completing the task>
+<Detailed step-by-step instructions generated based on the description>
 
 ## Expected Outcome
 <What should be achieved when following this prompt>
 ```
 
-Notes:
-- Sections may be omitted if not applicable
-- Additional sections may be added as needed (e.g., `## Examples`, `## Notes`)
-- Keep the format simple and readable
+**Generation Guidelines:**
+- Expand the user's description into detailed, actionable instructions
+- Infer relevant context and constraints
+- Add practical examples where helpful
+- Keep the tone professional and clear
+- Generate appropriate tags based on the content
 
-### 4. Check for Existing File
+### 4. Save the Prompt
 
-Query if the file already exists to get its SHA:
+Save to the local folder:
 
 ```bash
-gh api repos/${PROMPT_REPO_OWNER}/${PROMPT_REPO_NAME}/contents/prompts/<name>.md --jq '.sha' 2>/dev/null
+# Write content to: <paths.local>/<name>.md
 ```
 
-### 5. Upload to Repository
-
-Base64 encode the content and upload via GitHub API:
-
-For new files:
-```bash
-gh api repos/${PROMPT_REPO_OWNER}/${PROMPT_REPO_NAME}/contents/prompts/<name>.md \
-  --method PUT \
-  --field message="Add prompt: <name>" \
-  --field content="<base64-encoded-content>"
-```
-
-For existing files (include SHA):
-```bash
-gh api repos/${PROMPT_REPO_OWNER}/${PROMPT_REPO_NAME}/contents/prompts/<name>.md \
-  --method PUT \
-  --field message="Update prompt: <name>" \
-  --field content="<base64-encoded-content>" \
-  --field sha="<existing-sha>"
-```
-
-### 6. Confirm Success
+### 5. Confirm Success
 
 On success, display:
-> Prompt saved successfully: https://github.com/${PROMPT_REPO_OWNER}/${PROMPT_REPO_NAME}/blob/main/prompts/<name>.md
+> Prompt saved: `.claude/prompts/local/<name>.md`
+>
+> Use `/prompt:use <name>` to load this prompt.
+> Use `/prompt:share <name>` to share with your team.
+
+Then show a preview of the generated prompt content.
 
 ## Error Handling
 
-- **Authentication error**: Instruct user to run `gh auth login`
-- **Missing env vars**: List which variables need to be set
-- **API error**: Display the error message from GitHub
+- **Missing config**: Instruct user to create `.claude/prompt-config.json`
+- **Missing description**: Ask user to provide a description
 - **Invalid name**: Reject names with special characters (allow alphanumeric, hyphens, underscores)
+- **Write error**: Display the error message
 
-## Example
+## Examples
 
-User: `/prompt:save code-review`
+```
+/prompt:save code-review Guidelines for reviewing PRs focusing on security vulnerabilities and performance issues
+```
+Result: Generates a comprehensive code review prompt and saves to `.claude/prompts/local/code-review.md`
 
-Result: Saves a prompt file summarizing the current task as `prompts/code-review.md` in the configured repository.
+```
+/prompt:save api-design Best practices for designing RESTful APIs with proper error handling and versioning
+```
+Result: Generates an API design prompt and saves to `.claude/prompts/local/api-design.md`

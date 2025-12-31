@@ -1,0 +1,9 @@
+{
+  "repo_owner": "leweii",
+  "repo_name": "a",
+  "paths": {
+    "local": ".claude/prompts/local",
+    "shared": ".claude/prompts/shared"
+  },
+  "configured_at": "2025-01-01T00:00:00Z"
+}
